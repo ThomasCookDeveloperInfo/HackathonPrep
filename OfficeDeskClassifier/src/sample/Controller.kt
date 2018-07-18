@@ -12,12 +12,9 @@ import org.opencv.objdetect.CascadeClassifier
 import org.opencv.videoio.VideoCapture
 import java.io.ByteArrayInputStream
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 class Controller {
-    private var timer: ScheduledExecutorService? = null
-
     @FXML
     private lateinit var vidImage: ImageView
 
@@ -26,66 +23,54 @@ class Controller {
 
     @FXML
     fun initialize() {
+        // Load the opencv library
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
-        val mat = Mat.eye(3, 3, CvType.CV_8UC1)
-        System.out.println("mat = ${mat.dump()}")
     }
 
     @FXML
     fun startCamera() {
-        this.timer?.let {
-//            it.execute {
-//                Platform.runLater {
-//                    // Release and null video
-//                    this.video?.release()
-//
-//                    // Update button text
-//                    this.btnStartCamera.text = "Start Camera"
-//
-//                    // Null timer
-//                    this.timer = null
-//                }
-//            }
-        } ?: {
-            // Init video
-            val video = VideoCapture("C:/Users/info/Desktop/Projects/HackathonPrep/sample3.mp4")
+        // Init video
+        val video = VideoCapture("C:/Users/info/Desktop/Projects/HackathonPrep/sample.mp4")
 
-            val faceCascade = CascadeClassifier()
-            faceCascade.load("C:/Users/info/Desktop/Projects/HackathonPrep/haarcascade_fullbody.xml")
+        // Load cascade
+        val cascade = CascadeClassifier()
+        cascade.load("C:/Users/info/Desktop/Projects/HackathonPrep/haarcascade_profileface.xml")
 
-            // Every 33 milliseconds, grab a frame and render it
-            this.timer = Executors.newSingleThreadScheduledExecutor()
-            this.timer?.scheduleAtFixedRate({
-                if (video.isOpened == true) {
-                    val frame = Mat()
-                    video.read(frame)
+        // Every 33 milliseconds, grab a frame from video, do cascade classification on it
+        // Then render the frame with the classified bounding boxes overlaid on top of it
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
+            if (video.isOpened) {
+                // Read from the video into a mat object
+                val frame = Mat()
+                video.read(frame)
 
-                    // Convert the frame to grey scale
-                    val greyFrame = Mat()
-                    Imgproc.cvtColor(frame, greyFrame, Imgproc.COLOR_BGR2GRAY)
-                    Imgproc.equalizeHist(greyFrame, greyFrame)
+                // Convert the frame to grey scale
+                val greyFrame = Mat()
+                Imgproc.cvtColor(frame, greyFrame, Imgproc.COLOR_BGR2GRAY)
+                Imgproc.equalizeHist(greyFrame, greyFrame)
 
-                    // Track faces
-                    val faces = MatOfRect()
-                    val minFaceSize = greyFrame.rows() * 0.05
-                    faceCascade.detectMultiScale(greyFrame, faces, 1.01, 4, 0, Size(minFaceSize, minFaceSize), Size())
+                // Do cascade classification
+                val classifiedBoundingBoxes = MatOfRect()
+                val minFaceSize = greyFrame.rows() * 0.2
+                cascade.detectMultiScale(greyFrame, classifiedBoundingBoxes, 1.01, 4, 0, Size(minFaceSize, minFaceSize), Size())
 
-                    // Render faces to frame
-                    faces.toArray().forEach {
-                        Imgproc.rectangle(frame, it.tl(), it.br(), Scalar(0.0, 255.0, 0.0), 3)
-                    }
-
-                    val buffer = MatOfByte()
-                    Imgcodecs.imencode(".png", frame, buffer)
-
-                    Platform.runLater {
-                        this.vidImage.image = Image(ByteArrayInputStream(buffer.toArray()), 1024.0, 769.0, true, true)
-                    }
+                // Render classified bounding boxes to frame
+                classifiedBoundingBoxes.toArray().forEach {
+                    Imgproc.rectangle(frame, it.tl(), it.br(), Scalar(0.0, 255.0, 0.0), 3)
                 }
-            },0, 33, TimeUnit.MILLISECONDS)
 
-            // Update button text
-            this.btnStartCamera.text = "Stop Camera"
-        }.invoke()
+                // Encode the frame to a buffer for rendering
+                val buffer = MatOfByte()
+                Imgcodecs.imencode(".jpg", frame, buffer)
+
+                // Set the image to the buffer (run later to avoid blocking)
+                Platform.runLater {
+                    this.vidImage.image = Image(ByteArrayInputStream(buffer.toArray()), 1024.0, 769.0, true, true)
+                }
+            }
+        },0, 33, TimeUnit.MILLISECONDS)
+
+        // Update button text
+        this.btnStartCamera.text = "Stop Video"
     }
 }

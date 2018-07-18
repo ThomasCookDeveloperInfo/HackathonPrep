@@ -13,7 +13,7 @@
 
     <bottom>
         <Button fx:id="btnStartCamera"
-                text="Start Camera"
+                text="Start Video"
                 onAction="#startCamera"
                 BorderPane.alignment="CENTER"/>
     </bottom>
