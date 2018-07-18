@@ -48,10 +48,10 @@ class Controller {
 //            }
         } ?: {
             // Init video
-            val video = VideoCapture("C:/Users/info/Desktop/Projects/HackathonPrep/sample.mp4")
+            val video = VideoCapture("C:/Users/info/Desktop/Projects/HackathonPrep/sample3.mp4")
 
             val faceCascade = CascadeClassifier()
-            faceCascade.load("C:/Users/info/Desktop/Projects/HackathonPrep/haarcascade_frontalface_default.xml")
+            faceCascade.load("C:/Users/info/Desktop/Projects/HackathonPrep/haarcascade_fullbody.xml")
 
             // Every 33 milliseconds, grab a frame and render it
             this.timer = Executors.newSingleThreadScheduledExecutor()
@@ -68,7 +68,7 @@ class Controller {
                     // Track faces
                     val faces = MatOfRect()
                     val minFaceSize = greyFrame.rows() * 0.05
-                    faceCascade.detectMultiScale(greyFrame, faces, 1.1, 2, 0, Size(minFaceSize, minFaceSize), Size())
+                    faceCascade.detectMultiScale(greyFrame, faces, 1.01, 4, 0, Size(minFaceSize, minFaceSize), Size())
 
                     // Render faces to frame
                     faces.toArray().forEach {
